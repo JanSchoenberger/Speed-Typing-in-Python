@@ -1,7 +1,7 @@
 import curses 
 from curses import wrapper
-# Def steht hier für Define.
-
+import time
+import random
 def start_screen(stdscr):
     stdscr.clear() 
     stdscr.addstr("Willkommen zu der Speed Typing App :)")
@@ -9,41 +9,70 @@ def start_screen(stdscr):
     stdscr.refresh()
     stdscr.getkey()
 
+def display_text(stdscr, target, current, wpm=0): 
+    stdscr.addstr(target)
+    stdscr.addstr(1, 0, f"WPM: {wpm}")
+    for i, char in enumerate(current): 
+        correct_char = target[i]
+        color = curses.color_pair(1)
+        if char != correct_char:
+            color = curses.color_pair(2)
+        stdscr.addstr(0, i, char, color)
+def load_text():
+
+    with open("Words.txt", "r") as f:
+        lines = f.readlines()
+        return random.choice(lines).strip()
+
+
 def wpm_test(stdscr):
-    target_text = "Hello User, this is a test text for you to write."
+    target_text = load_text()
     current_text = []
-    # Programming can be very hard.
-    
-    
+    wpm = 0
+    start_time = time.time() 
+    stdscr.nodelay(True) 
     while True:
-        key = stdscr.getkey()
-        
-        if ord(key) == 27:
-            break # Das ist also die ESC-Taste. Das hat mit ASCII zutun, sehr gut.
-        
-        
-        current_text.append(key) # Ich mag es sehr Fortschritte in Python zu machen.
-
+        time_elapsed = max(time.time() - start_time, 1) 
+        wpm = round(len(current_text) / (time_elapsed / 60))
         stdscr.clear()
-        stdscr.addstr(target_text)
-        stdscr.refresh()
-        
-        for char in current_text:
-            stdscr.addstr(char, curses.color_pair(1))
 
+        display_text(stdscr, target_text, current_text, wpm)
         stdscr.refresh()
-# Ich habe unter anderem gelernt das programmieren mehr zu lernen.
-# Ich will mehr mit Linux arbeiten um Computer besser im Grunde zu begreifen.
 
-# An einem bestimmten Punkt muss man Pausen machen.
-# Es ist beeindruckend wie viel mehr man mit Android Programmieren will als mit IOS.
+        done = "".join(current_text)
+
+        if done == target_text:
+            stdscr.nodelay(False)
+            break
+
+        try:
+            key = stdscr.getkey()
+        except: 
+            continue
+
+
+        if ord(key) == 27:
+            break 
+        if key in ("KEY_BACKSPACE", "\b", "\x7f"): 
+            if len(current_text) > 0:  
+                current_text.pop()
+        elif len(current_text) < len(target_text):
+            current_text.append(key)
+
+
 def main(stdscr):
     curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
-# Änderung für den Intitialen Push. Dafür muss ich denke ich nichtmal soetwas schreiben.
-    start_screen(stdscr)
-    wpm_test(stdscr)
-wrapper(main) 
 
-# Ich werde dieses Programm später in JS übersetzten.
+    start_screen(stdscr)
+
+
+    while True:
+
+        wpm_test(stdscr)
+        stdscr.addstr(2, 0, "You completetd the text ! Press any key to continue...")
+        key = stdscr.getkey()
+        if ord(key) == 27:
+            break 
+wrapper(main) 
